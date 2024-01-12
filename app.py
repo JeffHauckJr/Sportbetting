@@ -1,12 +1,12 @@
 import tkinter as tk
 from tkinter import ttk
 import requests
-from Sportbetting.config import API_KEY
+from config import API_KEY
 import json
 
 
 REGIONS = 'us'
-MARKETS = 'fanduel'
+MARKETS = "h2h,spreads,totals"
 ODDS_FORMAT = 'decimal'
 DATE_FORMAT = 'iso'
 
@@ -34,8 +34,9 @@ class SportsBettingApp:
 
     def get_sports_list(self):
         # Make a request to the Odds API to get a list of sports
-        url = f"https://api.the-odds-api.com/v4/sports/?apiKey={API_KEY}"
-        response = requests.get(url)
+        url = "https://api.the-odds-api.com/v4/sports"
+        params = {"apiKey": API_KEY}
+        response = requests.get(url, params=params)
 
         if response.status_code == 200:
             try:
@@ -69,7 +70,26 @@ class SportsBettingApp:
         elif selected_sport == "MLB":
             self.display_baseball_page()
         elif selected_sport == "NCAAB":
-            self.display_basketball_page()
+            self.display_ncaab_page()
+
+        self.get_sport_odds(selected_sport)
+
+    def get_sport_odds(self, selected_sport):
+
+        url = f"https://api.the-odds-api.com/v4/sports/{selected_sport}/odds"
+        params = {"apiKey": API_KEY,
+                  "regions": REGIONS,
+                  "markets": MARKETS}
+        
+        response = requests.get(url, params)
+
+        if (response.status_code == 200):
+            odds_data = response.json()
+            print(odds_data)
+        else:
+            print(f"Failed to fetch odds. Status code: {response.status_code}")
+            print(response.text)
+        
 
     def display_football_page(self):
         # Replace this with the logic to display NCAA Football information
@@ -77,7 +97,11 @@ class SportsBettingApp:
 
     def display_basketball_page(self):
         # Replace this with the logic to display NBA or NCAA Basketball information
-        self.info_label.config(text="NBA or NCAA Basketball Information Page")
+        self.info_label.config(text="NBA Information Page")
+
+    def display_ncaab_page(self):
+        # Replace this with the logic to display NBA or NCAA Basketball information
+        self.info_label.config(text="NCAA Basketball Information Page")
 
     def display_baseball_page(self):
         # Replace this with the logic to display MLB information
@@ -85,6 +109,9 @@ class SportsBettingApp:
 
     def run(self):
         self.root.mainloop()
+
+
+
 
 # Create the main window
 root = tk.Tk()
