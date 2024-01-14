@@ -15,23 +15,16 @@ class SportsBettingApp:
         self.root = root
         self.root.title("Sports Betting App")
 
-        # Create frames for each sport
-        self.football_frame = tk.Frame(self.root)
-        self.basketball_frame = tk.Frame(self.root)
-        self.baseball_frame = tk.Frame(self.root)
+    # Create the sports dropdown
+        self.sports_dropdown = ttk.Combobox(self.root, state="readonly")
+        self.sports_dropdown.pack(pady=10)
 
-        # Create dropdown for selecting sports
-        self.sports_dropdown = ttk.Combobox(self.root, values=self.get_sports_list())
-        self.sports_dropdown.set("Select Sport")
-        self.sports_dropdown.pack()
+    # Populate the dropdown with titles
+        sports_list = self.get_sports_list()
+        self.sports_dropdown['values'] = [title for title, _ in sports_list]
 
-        # Create a label to display information
-        self.info_label = tk.Label(self.root, text="Select a sport from the dropdown.")
-        self.info_label.pack()
-
-        # Bind the selection event to the show_sport_frame method
+    # Bind the selection event to the show_sport_frame method
         self.sports_dropdown.bind("<<ComboboxSelected>>", self.show_sport_frame)
-
     def get_sports_list(self):
         # Make a request to the Odds API to get a list of sports
         url = "https://api.the-odds-api.com/v4/sports"
@@ -42,9 +35,18 @@ class SportsBettingApp:
             try:
                 # Attempt to parse the JSON response
                 data = response.json()
-                # Extract the titles from the response
-                titles = [sport["title"] for sport in data if sport["title"] in ["NFL", "NCAAF", "NBA", "MLB", "NCAAB"]]
-                return titles
+
+                # Check if the data is a list and contains dictionaries
+                if isinstance(data, list) and all(isinstance(sport, dict) for sport in data):
+                    # Define the desired titles
+                    desired_titles = ["NFL", "NCAAF", "NBA", "MLB", "NCAAB"]
+
+                    # Extract titles and keys for the desired sports as a list of tuples
+                    sports_list = [(sport["title"], sport["key"]) for sport in data if sport["title"] in desired_titles]
+                    return sports_list
+                else:
+                    print("Unexpected response format.")
+                    return []
             except json.JSONDecodeError as e:
                 print(f"Error decoding JSON: {e}")
                 return []
@@ -53,26 +55,17 @@ class SportsBettingApp:
             return []
 
     def show_sport_frame(self, event):
-        selected_sport = self.sports_dropdown.get()
+        selected_sport_title = self.sports_dropdown.get()
 
-        # Hide all frames
-        self.football_frame.pack_forget()
-        self.basketball_frame.pack_forget()
-        self.baseball_frame.pack_forget()
+    # Find the corresponding key for the selected sport
+        sports_list = self.get_sports_list()
+        selected_sport_key = next(key for title, key in sports_list if title == selected_sport_title)
 
-        # Show the selected frame
-        if selected_sport == "NCAAF":
-            self.display_football_page()
-        elif selected_sport == "NFL":
-            self.display_basketball_page()
-        elif selected_sport == "NBA":
-            self.display_baseball_page()
-        elif selected_sport == "MLB":
-            self.display_baseball_page()
-        elif selected_sport == "NCAAB":
-            self.display_ncaab_page()
+    # Use the selected_sport_key to fetch odds
+        odds_data = self.get_sport_odds(selected_sport_key)
 
-        self.get_sport_odds(selected_sport)
+    # Now you can process the odds_data as needed
+        print(f"Odds data for {selected_sport_title}: {odds_data}")
 
     def get_sport_odds(self, selected_sport):
 
@@ -83,29 +76,12 @@ class SportsBettingApp:
         
         response = requests.get(url, params)
 
-        if (response.status_code == 200):
+        if response.status_code == 200:
             odds_data = response.json()
-            print(odds_data)
+            return odds_data
         else:
             print(f"Failed to fetch odds. Status code: {response.status_code}")
-            print(response.text)
-        
-
-    def display_football_page(self):
-        # Replace this with the logic to display NCAA Football information
-        self.info_label.config(text="NCAA Football Information Page")
-
-    def display_basketball_page(self):
-        # Replace this with the logic to display NBA or NCAA Basketball information
-        self.info_label.config(text="NBA Information Page")
-
-    def display_ncaab_page(self):
-        # Replace this with the logic to display NBA or NCAA Basketball information
-        self.info_label.config(text="NCAA Basketball Information Page")
-
-    def display_baseball_page(self):
-        # Replace this with the logic to display MLB information
-        self.info_label.config(text="MLB Information Page")
+            return {}
 
     def run(self):
         self.root.mainloop()
